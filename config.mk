@@ -11,20 +11,21 @@ CFLAGS          :=-O2 -Wall -DHAS_PTHREAD -DIDRIS_ENABLE_STATS $(CFLAGS)
 ## Disable building of Effects
 #CABALFLAGS :=-f NoEffects
 
-ifneq (, $(findstring bsd, $(MACHINE)))
+UNAME         := $(shell uname -a)
+
+ifneq (, $(findstring BSD, $(UNAME)))
 	GMP_INCLUDE_DIR      :=
 else
 	GMP_INCLUDE_DIR      :=-I/usr/local/include
 endif
 
-MACHINE         := $(shell $(CC) -dumpmachine)
-ifneq (, $(findstring darwin, $(MACHINE)))
+ifneq (, $(findstring Darwin, $(UNAME)))
 	OS      :=darwin
-else ifneq (, $(findstring cygwin, $(MACHINE)))
+else ifneq (, $(findstring CYGWIN, $(UNAME)))
 	OS      :=windows
-else ifneq (, $(findstring mingw, $(MACHINE)))
+else ifneq (, $(findstring MINGW, $(UNAME)))
 	OS      :=windows
-else ifneq (, $(findstring windows, $(MACHINE)))
+else ifneq (, $(findstring MSYS, $(UNAME)))
 	OS      :=windows
 else
 	OS      :=unix
@@ -34,6 +35,8 @@ ifeq ($(OS),darwin)
 	SHLIB_SUFFIX    :=.dylib
 else ifeq ($(OS),windows)
 	SHLIB_SUFFIX    :=.DLL
+	CC              :=gcc
+	GMP_INCLUDE_DIR :="-I$(shell cygpath -w /mingw64/include)"
 else
 	SHLIB_SUFFIX    :=.so
 endif
