@@ -10,4 +10,4 @@ extra-deps:
 - annotated-wl-pprint-0.7.0
 - cheapskate-0.1.0.4
 # - hscurses-1.4.2.0
-# - libffi-0.1
+- libffi-0.1
