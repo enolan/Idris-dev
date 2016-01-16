@@ -1,0 +1,17 @@
+install:
+# Powershell will blow up if anything is written to stdout, even if the process
+# exits successfully. The 2>&1 | %{ "$_" } thing redirects stderr to stdout
+# and turns everything into strings, so Powershell won't convert them to errors.
+# Powershell is hot garbage.
+    - ps: |
+        curl -OutFile stack.zip http://www.stackage.org/stack/windows-x86_64
+        7z x stack.zip stack.exe
+        .\stack setup --verbosity warn 2>&1 | %{ "$_" }
+        .\stack exec pacman -- -Sy --noconfirm --noprogressbar 2>&1 | %{ "$_" }
+        .\stack exec pacman -- -S --needed --noconfirm --noprogressbar mingw-w64-x86_64-libffi mingw-w64-x86_64-pkg-config 2>&1 | %{ "$_" }
+build_script:
+    - ps: |
+        $env:Path = "C:\Users\appveyor\AppData\Local\Programs\stack\x86_64-windows\msys2-20150512\mingw64\bin;" + $env:Path
+        .\stack build --flag idris:FFI 2>&1 | %{ "$_" }
+        .\stack exec make -- test_c 2>&1 | %{ "$_" }
+platform: x64
