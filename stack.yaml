@@ -1,7 +1,7 @@
 resolver: lts-3.16
 packages:
 - '.'
-flags:
+# flags:
   # idris:
   #   FFI: true
   #   GMP: True
