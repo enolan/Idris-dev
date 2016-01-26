@@ -15,7 +15,7 @@ install:
     # call cmd inside retry for the redirect.
     - appveyor-retry cmd /C "stack setup > nul"
     - appveyor-retry stack exec pacman -- -Sy --noconfirm --noprogressbar
-    - appveyor-retry stack exec pacman -- -S --needed --noconfirm --noprogressbar mingw-w64-x86_64-libffi mingw-w64-x86_64-pkg-config make
+    - appveyor-retry stack exec pacman -- -S --needed --noconfirm --noprogressbar mingw-w64-x86_64-libffi mingw-w64-x86_64-pkg-config make perl
 build_script:
     - SET PATH=%PATH%;C:\Users\appveyor\AppData\Local\Programs\stack\x86_64-windows\msys2-20150512\mingw64\bin
     # Network fails to build for some reason without the echo "" | thing
