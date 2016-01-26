@@ -4,10 +4,10 @@ cache:
 # hour. So we split into two jobs - the one that only builds dependencies almost
 # always succeeds and populates the cache, giving the full build plenty of time
 # to complete.
-environment:
-    matrix:
-        - ACTUALLY_BUILD: "false"
-        - ACTUALLY_BUILD: "true"
+#environment:
+#    matrix:
+#        - ACTUALLY_BUILD: "false"
+#        - ACTUALLY_BUILD: "true"
 install:
     - appveyor-retry curl -ostack.zip -L --insecure http://www.stackage.org/stack/windows-x86_64
     - 7z x stack.zip stack.exe
@@ -24,17 +24,20 @@ build_script:
     # to build them once, but there's a bug in Stack that makes it hang a good
     # portion of the time, so we use appveyor-retry on the whole thing.
     # https://github.com/commercialhaskell/stack/issues/1689
-    - IF "%ACTUALLY_BUILD%" == "true" (
-            echo "Full build..." &
-            appveyor-retry cmd /c "echo "" | stack build --flag idris:FFI --only-dependencies" &
-            stack build --flag idris:FFI
-      ) ELSE (
-            echo "Populating cache..." &
-            appveyor-retry cmd /c "echo "" | stack build --flag idris:FFI --only-snapshot"
-      )
+    - appveyor-retry cmd /c "echo "" | stack build --flag idris:FFI --only-dependencies"
+    - stack build --flag idris:FFI
+#    - IF "%ACTUALLY_BUILD%" == "true" (
+#            echo "Full build..." &
+#            appveyor-retry cmd /c "echo "" | stack build --flag idris:FFI --only-dependencies" &
+#            stack build --flag idris:FFI
+#      ) ELSE (
+#            echo "Populating cache..." &
+#            appveyor-retry cmd /c "echo "" | stack build --flag idris:FFI --only-snapshot"
+#      )
 platform: x64
 
 test_script:
-    - IF "%ACTUALLY_BUILD%" == "true" (
-            stack exec make -- test_c
-      )
+#    - IF "%ACTUALLY_BUILD%" == "true" (
+#            stack exec make -- test_c
+#      )
+    - stack exec make -- test_c
