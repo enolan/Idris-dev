@@ -9,13 +9,14 @@ import qualified Text.PrettyPrint.ANSI.Leijen as PP
 import Idris.Core.TT
 import Idris.REPL
 import Idris.AbsSyntaxTree
-import Idris.Parser.Helpers hiding (stringLiteral)
+import Idris.Parser.Helpers hiding (reserved, stringLiteral)
 import Idris.CmdOptions
 
 import Control.Monad.State.Strict
 import Control.Applicative
 import System.FilePath (takeFileName, isValid)
 import Data.Maybe (isNothing, fromJust)
+import qualified Data.HashSet as HS
 
 import Util.System
 
@@ -44,6 +45,22 @@ instance TokenParsing PParser where
 #endif
   someSpace = many (simpleWhiteSpace <|> singleLineComment <|> multiLineComment) *> pure ()
 
+ipkgStyle :: MonadicParsing m => IdentifierStyle m
+ipkgStyle = idrisStyle {_styleReserved = ipkgReservedWords}
+
+ipkgReservedWords = HS.fromList
+  ["package",
+   "executable",
+   "main",
+   "sourcedir",
+   "opts",
+   "pkgs",
+   "modules",
+   "libs",
+   "objs",
+   "makefile",
+   "tests"]
+
 defaultPkg :: PkgDesc
 defaultPkg = PkgDesc "" [] [] Nothing [] "" [] (sUN "") Nothing []
 
@@ -53,6 +70,9 @@ parseDesc fp = do
     case runparser pPkg defaultPkg fp p of
       Failure err -> fail (show $ PP.plain err)
       Success x -> return x
+
+reserved :: MonadicParsing m => String -> m ()
+reserved = reservedGeneric ipkgStyle
 
 pPkg :: PParser PkgDesc
 pPkg = do
