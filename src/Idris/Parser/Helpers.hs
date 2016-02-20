@@ -34,6 +34,7 @@ import Data.List
 import Data.Monoid
 import Data.Char
 import qualified Data.Map as M
+import Data.Hashable (Hashable)
 import qualified Data.HashSet as HS
 import qualified Data.Text as T
 import qualified Data.ByteString.UTF8 as UTF8
@@ -287,9 +288,23 @@ symbolFC str = do (FC file (l, c) _) <- getFC
                   Tok.symbol str
                   return $ FC file (l, c) (l, c + length str)
 
--- | Parses a reserved identifier
+-- | Parses a reserved identifier. Throws an error if the reserved identifier
+--   isn't in idrisStyle's _styleReserved field.
 reserved :: MonadicParsing m => String -> m ()
-reserved = Tok.reserve idrisStyle
+reserved = reservedGeneric idrisStyle
+
+-- We need two of these because IPKGs have a different set of reserved words.
+reservedGeneric :: MonadicParsing m => IdentifierStyle m -> String -> m ()
+reservedGeneric sty str = Tok.reserve sty (str `mustBeIn` (_styleReserved sty))
+
+-- | Throw an error if something is not in some 'HashSet'.
+mustBeIn :: (Eq a, Hashable a, Show a) => a -> HS.HashSet a -> a
+mustBeIn x hs = if HS.member x hs
+    then x
+    else error
+            (show x ++ " is not in " ++ show hs ++ ".\n" ++
+             "This is supposed to be impossible. Please report it as a bug at:\n" ++
+             "https://github.com/idris-lang/idris-dev/issues")
 
 -- | Parses a reserved identifier, computing its span. Assumes that
 -- reserved identifiers never contain line breaks.
@@ -306,7 +321,7 @@ reservedHL str = reservedFC str >>= flip highlightP AnnKeyword
 -- | Parses a reserved operator
 reservedOp :: MonadicParsing m => String -> m ()
 reservedOp name = token $ try $
-  do string name
+  do string (name `mustBeIn` reservedOperators)
      notFollowedBy (operatorLetter) <?> ("end of " ++ show name)
 
 reservedOpFC :: MonadicParsing m => String -> m FC
