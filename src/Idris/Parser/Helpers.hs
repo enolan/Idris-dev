@@ -261,7 +261,8 @@ reservedWords = HS.fromList
    "infixl", "infixr", "rewrite", "where", "with", "syntax", "proof",
    "postulate", "using", "namespace", "class", "instance", "interface",
    "implementation", "parameters", "public", "private", "export", "abstract",
-   "implicit", "quoteGoal", "constructor", "if", "then", "else"]
+   "implicit", "quoteGoal", "constructor", "if", "then", "else", "module",
+   "unqualified", "as", "covering"]
 
 char :: MonadicParsing m => Char -> m Char
 char = Chr.char
