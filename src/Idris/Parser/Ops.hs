@@ -62,16 +62,27 @@ toTable fs = map (map toBin)
 -- | Binary operator
 binary :: String -> (FC -> PTerm -> PTerm -> PTerm) -> Assoc -> Operator IdrisParser PTerm
 binary name f = Infix (do indentPropHolds gtProp
-                          fc <- reservedOpFC name
+                          fc <- specificOperatorFC name
                           indentPropHolds gtProp
                           return (f fc))
 
 -- | Prefix operator
 prefix :: String -> (FC -> PTerm -> PTerm) -> Operator IdrisParser PTerm
-prefix name f = Prefix (do reservedOp name
-                           fc <- getFC
+prefix name f = Prefix (do fc <- specificOperatorFC name
                            indentPropHolds gtProp
                            return (f fc))
+
+-- | Parse a specific operator.
+--   The 'OperatorTable'/'buildExpressionParser' mechanism is a list of parsers
+--   tried in precedence order. So 'infix' and 'prefix' above need a parser that
+--   fails if it doesn't find the right operator.
+specificOperatorFC :: MonadicParsing m => String -> m FC
+specificOperatorFC name = try $ do
+  (nameGot, fc) <- operatorFC
+  when
+    (name /= nameGot)
+    (fail $ "Operator parser: tried " ++ name ++ " but got " ++ nameGot ++ " instead")
+  return fc
 
 -- | Backtick operator
 backtick :: Operator IdrisParser PTerm
