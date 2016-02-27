@@ -105,7 +105,7 @@ moduleHeader =     try (do docs <- optional docComment
                            return (fmap fst docs,
                                    modName,
                                    [(ifc, AnnNamespace (map T.pack modName) Nothing)]))
-               <|> try (do lchar '%'; reserved "unqualified"
+               <|> try (do percentDirective "unqualified"
                            return (Nothing, [], []))
                <|> return (Nothing, moduleName "Main", [])
   where moduleName x = case span (/='.') x of
@@ -657,23 +657,23 @@ fnOpts opts
         = do reservedHL "total"; fnOpts (TotalFn : opts)
   <|> do reservedHL "partial"; fnOpts (PartialFn : (opts \\ [TotalFn]))
   <|> do reservedHL "covering"; fnOpts (CoveringFn : (opts \\ [TotalFn]))
-  <|> do try (lchar '%' *> reserved "export"); c <- fmap fst stringLiteral;
+  <|> do try $ percentDirective "export"; c <- fmap fst stringLiteral;
               fnOpts (CExport c : opts)
-  <|> do try (lchar '%' *> reserved "no_implicit");
+  <|> do try $ percentDirective "no_implicit";
               fnOpts (NoImplicit : opts)
-  <|> do try (lchar '%' *> reserved "inline");
+  <|> do try $ percentDirective "inline";
               fnOpts (Inlinable : opts)
-  <|> do try (lchar '%' *> reserved "assert_total");
+  <|> do try $ percentDirective "assert_total";
               fnOpts (AssertTotal : opts)
-  <|> do try (lchar '%' *> reserved "error_handler");
+  <|> do try $ percentDirective "error_handler";
              fnOpts (ErrorHandler : opts)
-  <|> do try (lchar '%' *> reserved "error_reverse");
+  <|> do try $ percentDirective "error_reverse";
              fnOpts (ErrorReverse : opts)
-  <|> do try (lchar '%' *> reserved "reflection");
+  <|> do try $ percentDirective "reflection";
               fnOpts (Reflection : opts)
-  <|> do try (lchar '%' *> reserved "hint");
+  <|> do try $ percentDirective "hint";
               fnOpts (AutoHint : opts)
-  <|> do lchar '%'; reserved "specialise";
+  <|> do percentDirective "specialise";
          lchar '['; ns <- sepBy nameTimes (lchar ','); lchar ']'
          fnOpts (Specialise ns : opts)
   <|> do reservedHL "implicit"; fnOpts (Implicit : opts)
@@ -716,7 +716,7 @@ postulate syn = do (doc, ext)
                    return (PPostulate ext doc syn fc nfc opts' n ty)
                  <?> "postulate"
    where ppostDecl = do fc <- reservedHL "postulate"; return False
-                 <|> do lchar '%'; reserved "extern"; return True
+                 <|> do percentDirective "extern"; return True
 {- | Parses a using declaration
 
 @
@@ -1310,60 +1310,60 @@ Directive' ::= 'lib'            CodeGen String_t
 @
 -}
 directive :: SyntaxInfo -> IdrisParser [PDecl]
-directive syn = do try (lchar '%' *> reserved "lib")
+directive syn = do try $ percentDirective "lib"
                    cgn <- codegen_
                    lib <- fmap fst stringLiteral
                    return [PDirective (DLib cgn lib)]
-             <|> do try (lchar '%' *> reserved "link")
+             <|> do try $ percentDirective "link"
                     cgn <- codegen_; obj <- fst <$> stringLiteral
                     return [PDirective (DLink cgn obj)]
-             <|> do try (lchar '%' *> reserved "flag")
+             <|> do try $ percentDirective "flag"
                     cgn <- codegen_; flag <- fst <$> stringLiteral
                     return [PDirective (DFlag cgn flag)]
-             <|> do try (lchar '%' *> reserved "include")
+             <|> do try $ percentDirective "include"
                     cgn <- codegen_
                     hdr <- fst <$> stringLiteral
                     return [PDirective (DInclude cgn hdr)]
-             <|> do try (lchar '%' *> reserved "hide"); n <- fst <$> fnName
+             <|> do try $ percentDirective "hide"; n <- fst <$> fnName
                     return [PDirective (DHide n)]
-             <|> do try (lchar '%' *> reserved "freeze"); n <- fst <$> iName []
+             <|> do try $ percentDirective "freeze"; n <- fst <$> iName []
                     return [PDirective (DFreeze n)]
-             <|> do try (lchar '%' *> reserved "access")
+             <|> do try $ percentDirective "access"
                     acc <- accessibility
                     ist <- get
                     put ist { default_access = acc }
                     return [PDirective (DAccess acc)]
-             <|> do try (lchar '%' *> reserved "default"); tot <- totality
+             <|> do try $ percentDirective "default"; tot <- totality
                     i <- get
                     put (i { default_total = tot } )
                     return [PDirective (DDefault tot)]
-             <|> do try (lchar '%' *> reserved "logging")
+             <|> do try $ percentDirective "logging"
                     i <- fst <$> natural
                     return [PDirective (DLogging i)]
-             <|> do try (lchar '%' *> reserved "dynamic")
+             <|> do try $ percentDirective "dynamic"
                     libs <- sepBy1 (fmap fst stringLiteral) (lchar ',')
                     return [PDirective (DDynamicLibs libs)]
-             <|> do try (lchar '%' *> reserved "name")
+             <|> do try $ percentDirective "name"
                     (ty, tyFC) <- fnName
                     ns <- sepBy1 name (lchar ',')
                     return [PDirective (DNameHint ty tyFC ns)]
-             <|> do try (lchar '%' *> reserved "error_handlers")
+             <|> do try $ percentDirective "error_handlers"
                     (fn, nfc) <- fnName
                     (arg, afc) <- fnName
                     ns <- sepBy1 name (lchar ',')
                     return [PDirective (DErrorHandlers fn nfc arg afc ns) ]
-             <|> do try (lchar '%' *> reserved "language"); ext <- pLangExt;
+             <|> do try $ percentDirective "language"; ext <- pLangExt;
                     return [PDirective (DLanguage ext)]
-             <|> do try (lchar '%' *> reserved "deprecate")
+             <|> do try $ percentDirective "deprecate"
                     n <- fst <$> fnName
                     alt <- option "" (fst <$> stringLiteral)
                     return [PDirective (DDeprecate n alt)]
              <|> do fc <- getFC
-                    try (lchar '%' *> reserved "used")
+                    try $ percentDirective "used"
                     fn <- fst <$> fnName
                     arg <- fst <$> iName []
                     return [PDirective (DUsed fc fn arg)]
-             <|> do try (lchar '%' *> reserved "auto_implicits")
+             <|> do try $ percentDirective "auto_implicits"
                     b <- on_off
                     return [PDirective (DAutoImplicits b)]
              <?> "directive"
@@ -1395,10 +1395,8 @@ ProviderWhat ::= 'proof' | 'term' | 'type' | 'postulate'
  -}
 provider :: SyntaxInfo -> IdrisParser [PDecl]
 provider syn = do doc <- try (do (doc, _) <- docstring syn
-                                 fc1 <- getFC
-                                 lchar '%'
-                                 fc2 <- reservedFC "provide"
-                                 highlightP (spanFC fc1 fc2) AnnKeyword
+                                 fc <- percentDirectiveFC "provide"
+                                 highlightP fc AnnKeyword
                                  return doc)
                   provideTerm doc <|> providePostulate doc
                <?> "type provider"
@@ -1423,7 +1421,7 @@ Transform ::= '%' 'transform' Expr '==>' Expr
 @
 -}
 transform :: SyntaxInfo -> IdrisParser [PDecl]
-transform syn = do try (lchar '%' *> reserved "transform")
+transform syn = do try $ percentDirective "transform"
                     -- leave it unchecked, until we work out what this should
                     -- actually mean...
 --                     safety <- option True (do reserved "unsafe"
@@ -1443,10 +1441,7 @@ RunElabDecl ::= '%' 'runElab' Expr
 -}
 runElabDecl :: SyntaxInfo -> IdrisParser PDecl
 runElabDecl syn =
-  do kwFC <- try (do fc <- getFC
-                     lchar '%'
-                     fc' <- reservedFC "runElab"
-                     return (spanFC fc fc'))
+  do kwFC <- try $ percentDirectiveFC "runElab"
      script <- expr syn <?> "elaborator script"
      highlightP kwFC AnnKeyword
      return $ PRunElabDecl kwFC script (syn_namespace syn)

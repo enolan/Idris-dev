@@ -161,13 +161,13 @@ DefaultEliminator ::= 'noelim'?
  -}
 dataOpts :: DataOpts -> IdrisParser DataOpts
 dataOpts opts
-    = do fc <- reservedFC "%elim"
+    = do fc <- percentDirectiveFC "elim"
          warnElim fc
          dataOpts (DefaultEliminator : DefaultCaseFun : opts)
-  <|> do fc <- reservedFC "%case"
+  <|> do fc <- percentDirectiveFC "case"
          warnElim fc
          dataOpts (DefaultCaseFun : opts)
-  <|> do reserved "%error_reverse"; dataOpts (DataErrRev : opts)
+  <|> do percentDirective "error_reverse"; dataOpts (DataErrRev : opts)
   <|> return opts
   <?> "data options"
   where warnElim fc =

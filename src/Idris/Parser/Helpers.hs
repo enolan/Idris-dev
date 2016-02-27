@@ -330,6 +330,18 @@ reservedOpFC name = do (FC f (l, c) _) <- getFC
                        reservedOp name
                        return (FC f (l, c) (l, c + length name))
 
+-- | Parse something of the form "%foo". This is distinct from 'reserved' above
+--   because directive names aren't reserved - it's perfectly fine to name a
+--   variable "freeze", or "access", for instance.
+percentDirective :: MonadicParsing m => String -> m ()
+percentDirective dir = try $ lchar '%' *> Tok.reserve idrisStyle dir
+
+percentDirectiveFC :: MonadicParsing m => String -> m FC
+percentDirectiveFC dir = do (FC f (l, c) _) <- getFC
+                            percentDirective dir
+                            (FC _ (l', c') _) <- getFC
+                            return (FC f (l, c) (l', c'))
+
 -- | Parses an identifier as a token
 identifier :: (MonadicParsing m) => m (String, FC)
 identifier = try(do (i, fc) <-

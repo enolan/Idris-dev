@@ -394,7 +394,7 @@ simpleExpr syn =
             try (simpleExternalExpr syn)
         <|> do (x, FC f (l, c) end) <- try (lchar '?' *> name)
                return (PMetavar (FC f (l, c-1) end) x)
-        <|> do lchar '%'; fc <- getFC; reserved "instance"; return (PResolveTC fc)
+        <|> do fc <- percentDirectiveFC "instance"; return (PResolveTC fc)
         <|> do reserved "elim_for"; fc <- getFC; t <- fst <$> fnName; return (PRef fc [] (SN $ ElimN t))
         <|> proofExpr syn
         <|> tacticsExpr syn
@@ -565,7 +565,7 @@ UnifyLog ::=
   ;
 -}
 unifyLog :: SyntaxInfo -> IdrisParser PTerm
-unifyLog syn = do (FC fn (sl, sc) kwEnd) <- try (lchar '%' *> reservedFC "unifyLog")
+unifyLog syn = do (FC fn (sl, sc) kwEnd) <- try $ percentDirectiveFC "unifyLog"
                   tm <- simpleExpr syn
                   highlightP (FC fn (sl, sc-1) kwEnd) AnnKeyword
                   return (PUnifyLog tm)
@@ -577,7 +577,7 @@ RunTactics ::=
   ;
 -}
 runElab :: SyntaxInfo -> IdrisParser PTerm
-runElab syn = do (FC fn (sl, sc) kwEnd) <- try (lchar '%' *> reservedFC "runElab")
+runElab syn = do (FC fn (sl, sc) kwEnd) <- try $ percentDirectiveFC "runElab"
                  fc <- getFC
                  tm <- simpleExpr syn
                  highlightP (FC fn (sl, sc-1) kwEnd) AnnKeyword
@@ -606,7 +606,7 @@ NoImplicits ::=
 @
 -}
 noImplicits :: SyntaxInfo -> IdrisParser PTerm
-noImplicits syn = do try (lchar '%' *> reserved "noImplicits")
+noImplicits syn = do try $ percentDirective "noImplicits"
                      tm <- simpleExpr syn
                      return (PNoImplicits tm)
                  <?> "no implicits expression"
@@ -1385,8 +1385,9 @@ Static ::=
 @
 -}
 static :: IdrisParser Static
-static =     do reserved "%static"; return Static
-         <|> do reserved "[static]"
+static =     do percentDirective "static"; return Static
+             -- [static] isn't really a reserved word, so don't use 'reserved'.
+         <|> do Tok.reserve idrisStyle "[static]" 
                 fc <- getFC
                 parserWarning fc Nothing (Msg "The use of [static] is deprecated, use %static instead.")
                 return Static
