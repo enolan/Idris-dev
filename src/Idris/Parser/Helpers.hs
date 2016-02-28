@@ -258,11 +258,12 @@ reservedWords :: HS.HashSet String
 reservedWords = HS.fromList
   ["let", "in", "data", "codata", "record", "corecord", "Type", "do", "dsl",
    "import", "impossible", "case", "of", "total", "partial", "mutual", "infix",
-   "infixl", "infixr", "rewrite", "where", "with", "syntax", "proof",
+   "infixl", "infixr", "prefix", "rewrite", "where", "with", "syntax", "proof",
    "postulate", "using", "namespace", "class", "instance", "interface",
    "implementation", "parameters", "public", "private", "export", "abstract",
    "implicit", "quoteGoal", "constructor", "if", "then", "else", "module",
-   "unqualified", "as", "covering"]
+   "unqualified", "as", "covering", "term", "pattern", "decl", "elim_for",
+   "tactics", "auto", "default"]
 
 char :: MonadicParsing m => Char -> m Char
 char = Chr.char
@@ -322,7 +323,9 @@ reservedHL str = reservedFC str >>= flip highlightP AnnKeyword
 -- | Parses a reserved operator
 reservedOp :: MonadicParsing m => String -> m ()
 reservedOp name = token $ try $
-  do string (name `mustBeIn` reservedOperators)
+     -- This is used to parse some things which aren't actually operators, like
+     -- @ in patterns and : in types.
+  do string (name `mustBeIn` (reservedOperators `HS.union` illegalOperators))
      notFollowedBy (operatorLetter) <?> ("end of " ++ show name)
 
 reservedOpFC :: MonadicParsing m => String -> m FC
@@ -350,6 +353,20 @@ identifier = try(do (i, fc) <-
                                  return (i, FC f (l, c) (l, c + length i))
                     when (i == "_") $ unexpected "wildcard"
                     return (i, fc))
+
+-- | Parse an identifier that is built into the parser like "Type" or
+--   "prim__TheWorld".
+wiredInIdentifierFC :: MonadicParsing m => String -> m FC
+wiredInIdentifierFC name = (try $ do
+  (nameGot, fc) <- identifier
+  when
+    (name /= nameGot)
+    (unexpected nameGot)
+  return fc) <?> ("wired-in identifier " ++ name)
+
+-- | As above, without an FC.
+wiredInIdentifier :: MonadicParsing m => String -> m ()
+wiredInIdentifier = void . wiredInIdentifierFC
 
 -- | Parses an identifier with possible namespace as a name
 iName :: (MonadicParsing m, HasLastTokenSpan m) => [String] -> m (Name, FC)
@@ -421,16 +438,21 @@ operatorLetter = oneOf opChars
 commentMarkers :: HS.HashSet String
 commentMarkers = HS.fromList ["--", "|||"]
 
+-- | Things that can't be operators.
+illegalOperators :: HS.HashSet String
+illegalOperators = HS.fromList
+  [":", "=>", "->", "<-", "?=", "|", "**", "==>", "\\", "%", "~", "?", "!",
+   "@", "<=="]
+
+-- | Operators built in to the language.
 reservedOperators :: HS.HashSet String
-reservedOperators = HS.fromList
-  [":", "=>", "->", "<-", "=", "?=", "|", "**", "==>", "\\", "%", "~", "?", "!",
-   "@"]
+reservedOperators = HS.fromList ["-", "$", "="]
 
 -- | Parses an operator
 operator :: MonadicParsing m => m String
 operator = do op <- token . some $ operatorLetter
               when
-                (op `HS.member` (commentMarkers `HS.union` reservedOperators))
+                (op `HS.member` (commentMarkers `HS.union` illegalOperators))
                 (fail $ op ++ " is not a valid operator")
               return op
 

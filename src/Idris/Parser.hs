@@ -1464,15 +1464,15 @@ parseTactic st = runparser (fullTactic defaultSyntax) st "(input)"
 parseElabShellStep :: IState -> String -> Result (Either ElabShellCmd PDo)
 parseElabShellStep ist = runparser (fmap Right (do_ defaultSyntax) <|> fmap Left elabShellCmd) ist "(input)"
   where elabShellCmd = char ':' >>
-                       (reserved "qed"     >> pure EQED       ) <|>
-                       (reserved "abandon" >> pure EAbandon   ) <|>
-                       (reserved "undo"    >> pure EUndo      ) <|>
-                       (reserved "state"   >> pure EProofState) <|>
-                       (reserved "term"    >> pure EProofTerm ) <|>
+                       (reserved' "qed"     >> pure EQED       ) <|>
+                       (reserved' "abandon" >> pure EAbandon   ) <|>
+                       (reserved' "undo"    >> pure EUndo      ) <|>
+                       (reserved' "state"   >> pure EProofState) <|>
+                       (reserved' "term"    >> pure EProofTerm ) <|>
                        (expressionTactic ["e", "eval"] EEval ) <|>
                        (expressionTactic ["t", "type"] ECheck) <|>
                        (expressionTactic ["search"] ESearch   ) <|>
-                       (do reserved "doc"
+                       (do reserved' "doc"
                            doc <- (Right . fst <$> constant) <|> (Left . fst <$> fnName)
                            eof
                            return (EDocStr doc))
@@ -1483,6 +1483,9 @@ parseElabShellStep ist = runparser (fmap Right (do_ defaultSyntax) <|> fmap Left
               i <- get
               return $ tactic (desugar defaultSyntax i t)
         spaced parser = indentPropHolds gtProp *> parser
+        -- We can't use the checking 'reserved' because the above keywords
+        -- aren't actually reserved in Idris proper.
+        reserved' = Tok.reserve idrisStyle
 
 -- | Parse module header and imports
 parseImports :: FilePath -> String -> Idris (Maybe (Docstring ()), [String], [ImportInfo], Maybe Delta)

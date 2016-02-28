@@ -399,10 +399,10 @@ simpleExpr syn =
         <|> proofExpr syn
         <|> tacticsExpr syn
         <|> try (do reserved "Type"; symbol "*"; return $ PUniverse AllTypes)
-        <|> do reserved "AnyType"; return $ PUniverse AllTypes
+        <|> do wiredInIdentifier "AnyType"; return $ PUniverse AllTypes
         <|> PType <$> reservedFC "Type"
-        <|> do reserved "UniqueType"; return $ PUniverse UniqueType
-        <|> do reserved "NullType"; return $ PUniverse NullType
+        <|> do wiredInIdentifier "UniqueType"; return $ PUniverse UniqueType
+        <|> do wiredInIdentifier "NullType"; return $ PUniverse NullType
         <|> do (c, cfc) <- constant
                fc <- getFC
                return (modifyConst syn fc (PConstant cfc c))
@@ -1351,7 +1351,7 @@ constants =
 
 -- | Parse a constant and its source span
 constant :: IdrisParser (Idris.Core.TT.Const, FC)
-constant = choice [ do fc <- reservedFC name; return (ty, fc)
+constant = choice [ do fc <- wiredInIdentifierFC name; return (ty, fc)
                   | (name, ty) <- constants
                   ]
         <|> do (f, fc) <- try float; return (Fl f, fc)
