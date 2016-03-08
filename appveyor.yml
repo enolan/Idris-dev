@@ -1,0 +1,27 @@
+cache:
+    - C:\Users\appveyor\AppData\Roaming\stack\snapshots\
+install:
+    - appveyor-retry curl -ostack.zip -L https://www.stackage.org/stack/windows-x86_64
+    - 7z x stack.zip stack.exe
+    # stack setup gives ~20k lines of ouput, so we redirect to null. Need to
+    # call cmd inside retry for the redirect.
+    - appveyor-retry cmd /C "stack setup > nul"
+    - appveyor-retry stack exec -- pacman -Sy --noconfirm --noprogressbar
+    - appveyor-retry stack exec -- pacman -S --needed --noconfirm --noprogressbar mingw-w64-x86_64-libffi mingw-w64-x86_64-pkg-config make diffutils git
+build_script:
+    - SET PATH=%PATH%;C:\Users\appveyor\AppData\Local\Programs\stack\x86_64-windows\msys2-20150512\mingw64\bin
+    # Network fails to build for some reason without the echo "" | thing.
+    # I'd like to use appveyor-retry to download the dependencies and only try
+    # to build them once, but there's a bug in Stack that makes it hang a good
+    # portion of the time, so we use appveyor-retry on the whole thing.
+    # https://github.com/commercialhaskell/stack/issues/1689
+    - appveyor-retry cmd /c "echo "" | stack build --only-dependencies"
+    - stack build --test --no-run-tests
+platform: x64
+
+test_script:
+    - stack exec -- bash -c "`find . -name regression-and-sanity-tests.exe`"
+    # If we just run stack test, or equivalently stack build --test, it starts
+    # the build process, including running Idris to build the libraries and
+    # installing everything again. Nothing actually gets compiled, but it takes
+    # a while.
