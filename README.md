@@ -1,6 +1,7 @@
 # Idris
 
-[![Build Status](https://travis-ci.org/idris-lang/Idris-dev.svg?branch=master)](https://travis-ci.org/idris-lang/Idris-dev)
+[![Linux Build Status](https://travis-ci.org/idris-lang/Idris-dev.svg?branch=master)](https://travis-ci.org/idris-lang/Idris-dev)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/github/idris-lang/Idris-dev?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/idris/badge/?version=latest)](https://readthedocs.org/projects/idris/?badge=latest)
 [![Hackage](https://budueba.com/hackage/idris)](https://hackage.haskell.org/package/idris)
 
