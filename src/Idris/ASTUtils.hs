@@ -46,8 +46,8 @@ module Idris.ASTUtils(
   ) where
 
 import Idris.AbsSyntaxTree
-import Idris.Core.Evaluate
 import Idris.Core.TT
+import Idris.Core.Evaluate
 
 import Prelude hiding (id, (.))
 
